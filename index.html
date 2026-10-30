@@ -63,6 +63,12 @@
         background:var(--card);color:var(--text)}
   input:focus{outline:2px solid var(--green-2);outline-offset:-1px}
   .row input.cap{width:96px;flex:none}
+  .tools{display:flex;gap:18px}
+  button.link.edit{color:var(--green)}
+  button.ghost{background:var(--track);color:var(--text)}
+  .editbox{margin-top:12px;border-top:1px solid var(--line);padding-top:12px}
+  .editbox button{margin-top:6px}
+  .hint{color:var(--muted);font-size:.85rem;margin:8px 0 4px}
   .err{color:var(--red);font-size:.85rem;margin:8px 0 0;min-height:1em}
   .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translate(-50%,20px);opacity:0;
          background:#17201a;color:#fff;padding:12px 18px;border-radius:12px;font-size:.95rem;transition:.25s;pointer-events:none;max-width:90vw}
@@ -94,7 +100,7 @@ firebase.initializeApp({databaseURL: DB_URL});
 const db = firebase.database();
 const $ = id => document.getElementById(id);
 
-let name, key, isAdmin = false, lastSlots = null;
+let name, key, isAdmin = false, lastSlots = null, editing = null;
 const openState = new Map(); // yeniden çizimde "Katılanlar" açık/kapalı kalsın
 
 function el(tag, props, ...kids) {
@@ -161,17 +167,52 @@ function showPanel() {
   $("admin").replaceChildren(form);
 }
 
-function toggle(id, cap) {
-  db.ref(`slots/${id}/people`).transaction(p => {
-    p = p || {};
+// kontenjan sunucudaki güncel değerden okunur (hoca düşürmüş olabilir)
+function toggle(id) {
+  db.ref("slots/" + id).transaction(s => {
+    if (!s) return s; // yerel önbellek boşsa sunucu değeriyle tekrar denenir
+    const p = s.people = s.people || {};
     if (p[key]) delete p[key];
-    else if (Object.keys(p).length >= cap) return;
+    else if (Object.keys(p).length >= s.cap) return;
     else p[key] = {n: name, t: firebase.database.ServerValue.TIMESTAMP};
-    return p;
+    return s;
   }, (err, committed) => {
     if (err) toast("Bağlantı hatası, tekrar dene.");
     else if (!committed) toast("Bu saat dolu.");
   });
+}
+
+// taslak "editing"de tutulur, böylece başkası katılıp sayfa yeniden çizilince yazılan kaybolmaz
+function editForm(id, count) {
+  const label = el("input", {value: editing.label, oninput: e => editing.label = e.target.value});
+  const cap = el("input", {type: "number", value: editing.cap, min: 1, inputMode: "numeric", className: "cap", title: "Kontenjan",
+    oninput: e => editing.cap = e.target.value});
+  const err = el("p", {className: "err"});
+  return el("form", {className: "editbox", onsubmit: e => {
+    e.preventDefault();
+    const l = label.value.trim(), c = parseInt(cap.value, 10);
+    if (!l || !(c > 0)) { err.textContent = "Saat ve kontenjan gerekli."; return; }
+    // kontenjan katılan sayısının altına inemez; kontrol sunucudaki güncel listeyle yapılır
+    let tooFew = 0;
+    db.ref("slots/" + id).transaction(s => {
+      if (!s) return s;
+      tooFew = Object.keys(s.people || {}).length;
+      if (c < tooFew) return;
+      s.label = l; s.cap = c;
+      return s;
+    }, (e2, committed, snap) => {
+      if (e2) err.textContent = "Bağlantı hatası, tekrar dene.";
+      else if (committed && !snap.exists()) { editing = null; toast("Bu saat silinmiş."); }
+      else if (!committed) err.textContent = `${tooFew} kişi katıldı, kontenjan bundan az olamaz.`;
+      else { editing = null; toast("Kaydedildi"); render(); }
+    });
+  }},
+    el("div", {className: "row"}, label, cap),
+    el("p", {className: "hint", textContent: `Şu an ${count} kişi katıldı.`}),
+    el("div", {className: "row"},
+      el("button", {type: "button", className: "ghost", textContent: "İptal", onclick: () => { editing = null; render(); }}),
+      el("button", {textContent: "Kaydet"})),
+    err);
 }
 
 function render() {
@@ -201,12 +242,14 @@ function render() {
         textContent: joined ? "Vazgeç" : full ? "Dolu" : "Katılıyorum",
         className: joined ? "leave" : "",
         disabled: full && !joined,
-        onclick: () => toggle(id, s.cap)
+        onclick: () => toggle(id)
       }));
     const open = openState.has(id) ? openState.get(id) : joined || count <= 6;
     if (count) card.append(el("details", {open, ontoggle: e => openState.set(id, e.target.open)}, el("summary", {textContent: `Katılanlar (${count})`}), list));
-    if (isAdmin) card.append(el("button", {className: "link", textContent: "Saati sil",
-      onclick: () => confirm(`"${s.label}" silinsin mi?`) && db.ref("slots/" + id).remove()}));
+    if (isAdmin) card.append(editing?.id === id ? editForm(id, count) : el("div", {className: "tools"},
+      el("button", {className: "link edit", textContent: "Düzenle", onclick: () => { editing = {id, label: s.label, cap: s.cap}; render(); }}),
+      el("button", {className: "link", textContent: "Saati sil",
+        onclick: () => confirm(`"${s.label}" silinsin mi?`) && db.ref("slots/" + id).remove()})));
     box.append(card);
   }
 }
