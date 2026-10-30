@@ -1,29 +1,89 @@
 <!doctype html>
 <html lang="tr">
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1f6b3a">
 <title>Tenis Katılım</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎾</text></svg>">
 <style>
-  body{font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;padding:16px;background:#f4f7f2}
-  .slot{background:#fff;border-radius:12px;padding:14px;margin:12px 0;box-shadow:0 1px 3px #0002}
-  .slot h2{margin:0 0 4px;font-size:1.1rem}
-  .slot small{color:#666}
-  button{font:inherit;padding:10px 14px;border:0;border-radius:8px;background:#2e7d32;color:#fff;cursor:pointer;margin-top:8px}
-  button.leave{background:#c62828}button.ghost{background:#888}button:disabled{background:#bbb}
-  ol{margin:8px 0 0;padding-left:22px}li.me{font-weight:700}
-  #admin{background:#fff8e1;padding:12px;border-radius:12px}
-  input{font:inherit;padding:8px;margin:2px;width:calc(50% - 20px)}
+  :root{
+    --bg:#eef3ec; --card:#fff; --text:#17201a; --muted:#66736a; --line:#e3e9e1;
+    --green:#1f6b3a; --green-2:#2e8b4e; --ball:#d7e84a; --red:#c0392b; --red-bg:#fdecea;
+    --track:#e6ece4; --me:#e8f5ec; --shadow:0 1px 2px #0000000d,0 4px 14px #0000000f;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --bg:#0f1511; --card:#18211b; --text:#e8efe9; --muted:#93a198; --line:#26322a;
+    --green:#3fa564; --green-2:#4cb873; --red:#ef6a5b; --red-bg:#3a1f1c;
+    --track:#26322a; --me:#1d3324; --shadow:none;
+  }}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);
+       -webkit-text-size-adjust:100%;padding-bottom:env(safe-area-inset-bottom)}
+  header{background:linear-gradient(160deg,#1f6b3a,#2e8b4e);color:#fff;padding:calc(18px + env(safe-area-inset-top)) 18px 22px;
+         border-radius:0 0 22px 22px;position:relative;overflow:hidden}
+  header::after{content:"";position:absolute;right:-30px;top:-30px;width:120px;height:120px;border-radius:50%;
+         border:2px solid #ffffff22;box-shadow:0 0 0 18px #ffffff0d}
+  header h1{margin:0;font-size:1.45rem;letter-spacing:-.01em}
+  #who{margin:6px 0 0;font-size:.95rem;opacity:.92}
+  #who a{color:#fff;opacity:.75;margin-left:6px;font-size:.85rem}
+  main{max-width:560px;margin:0 auto;padding:14px 14px 28px}
+  .card{background:var(--card);border-radius:18px;padding:16px;margin:0 0 12px;box-shadow:var(--shadow);border:1px solid var(--line)}
+  .card.joined{border-color:var(--green);box-shadow:0 0 0 1px var(--green) inset,var(--shadow)}
+  .head{display:flex;align-items:flex-start;gap:10px}
+  .head h2{margin:0;font-size:1.2rem;flex:1;word-break:break-word}
+  .badge{font-size:.75rem;font-weight:600;padding:4px 9px;border-radius:99px;background:var(--me);color:var(--green);white-space:nowrap}
+  .badge.full{background:var(--track);color:var(--muted)}
+  .meta{display:flex;justify-content:space-between;color:var(--muted);font-size:.85rem;margin:10px 0 6px}
+  .bar{height:8px;border-radius:99px;background:var(--track);overflow:hidden}
+  .bar i{display:block;height:100%;background:var(--green-2);border-radius:inherit;transition:width .3s}
+  .bar.full i{background:var(--muted)}
+  button{font:inherit;font-weight:600;font-size:1rem;width:100%;min-height:50px;border:0;border-radius:14px;
+         background:var(--green);color:#fff;cursor:pointer;margin-top:14px;transition:transform .08s,opacity .2s}
+  button:active{transform:scale(.98)}
+  button.leave{background:var(--red-bg);color:var(--red)}
+  button:disabled{background:var(--track);color:var(--muted);cursor:default;transform:none}
+  button.link{background:none;color:var(--red);min-height:0;width:auto;padding:6px 0;margin-top:10px;font-size:.85rem;font-weight:500}
+  details{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
+  summary{cursor:pointer;color:var(--muted);font-size:.9rem;list-style:none;padding:4px 0}
+  summary::-webkit-details-marker{display:none}
+  summary::before{content:"▸ ";display:inline-block;transition:transform .2s}
+  details[open] summary::before{transform:rotate(90deg)}
+  ol{margin:6px 0 0;padding:0;list-style:none;counter-reset:n}
+  li{counter-increment:n;display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:10px;font-size:.98rem}
+  li::before{content:counter(n);min-width:24px;height:24px;border-radius:50%;background:var(--track);color:var(--muted);
+             font-size:.75rem;font-weight:600;display:grid;place-items:center}
+  li.me{background:var(--me);font-weight:700}
+  li.me::before{background:var(--green);color:#fff}
+  .empty{color:var(--muted);text-align:center;padding:32px 10px}
+  .admin{background:#fff8e1;border-color:#f1e2a6;color:#3b3415}
+  @media (prefers-color-scheme:dark){.admin{background:#2a2614;border-color:#4a4220;color:#efe6c0}}
+  .admin h3{margin:0 0 10px;font-size:1rem}
+  .row{display:flex;gap:8px}
+  input{font:inherit;font-size:16px;width:100%;min-height:48px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);
+        background:var(--card);color:var(--text)}
+  input:focus{outline:2px solid var(--green-2);outline-offset:-1px}
+  .row input.cap{width:96px;flex:none}
+  .err{color:var(--red);font-size:.85rem;margin:8px 0 0;min-height:1em}
+  .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translate(-50%,20px);opacity:0;
+         background:#17201a;color:#fff;padding:12px 18px;border-radius:12px;font-size:.95rem;transition:.25s;pointer-events:none;max-width:90vw}
+  .toast.show{opacity:1;transform:translate(-50%,0)}
 </style>
 <body>
-<h1>🎾 Tenis Antrenmanı</h1>
-<p id="who"></p>
-<div id="admin" hidden>
-  <b>Hoca paneli</b><br>
-  <input id="label" placeholder="Örn: Salı 19:00">
-  <input id="cap" type="number" value="16" min="1">
-  <button id="add">Saat ekle</button>
-</div>
-<div id="slots"></div>
+<header>
+  <h1>🎾 Tenis Antrenmanı</h1>
+  <p id="who"></p>
+</header>
+<main>
+  <form id="nameForm" class="card" hidden>
+    <h2 style="margin:0 0 6px;font-size:1.15rem">Hoş geldin!</h2>
+    <p style="margin:0 0 12px;color:var(--muted)">Adını bir kez yaz, bu telefonda hatırlanır.</p>
+    <input id="nameInput" placeholder="Ad Soyad" autocomplete="name" autocapitalize="words" enterkeyhint="done">
+    <button>Devam</button>
+  </form>
+  <div id="admin" class="card admin" hidden></div>
+  <div id="slots"></div>
+</main>
+<div id="toast" class="toast"></div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -32,26 +92,62 @@ const DB_URL = "https://tenis-katilim-default-rtdb.firebaseio.com";
 const ADMIN_PIN = "0000"; // shortcut: istemci tarafı kontrol, ciddi güvenlik değil; gerekirse Firebase Auth'a geçilir
 firebase.initializeApp({databaseURL: DB_URL});
 const db = firebase.database();
+const $ = id => document.getElementById(id);
 
-let name = localStorage.getItem("name");
-while (!name || !name.trim()) name = prompt("Ad Soyad (bir kez girilir):");
-name = name.trim().replace(/\s+/g, " ");
-localStorage.setItem("name", name);
-const key = name.toLocaleLowerCase("tr").replace(/[.#$\[\]\/]/g, "_");
-
-const isAdmin = location.hash === "#admin" && prompt("Hoca PIN:") === ADMIN_PIN;
-document.getElementById("admin").hidden = !isAdmin;
-
-const who = document.getElementById("who");
-who.append("Merhaba ", Object.assign(document.createElement("b"), {textContent: name}), " · ");
-const change = Object.assign(document.createElement("a"), {textContent: "ben değilim", href: "#"});
-change.onclick = e => { e.preventDefault(); localStorage.removeItem("name"); location.reload(); };
-who.append(change);
+let name, key, isAdmin = false, lastSlots = null;
+const openState = new Map(); // yeniden çizimde "Katılanlar" açık/kapalı kalsın
 
 function el(tag, props, ...kids) {
   const n = Object.assign(document.createElement(tag), props);
   n.append(...kids);
   return n;
+}
+
+function toast(msg) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toast.h);
+  toast.h = setTimeout(() => t.classList.remove("show"), 2500);
+}
+
+function start(n) {
+  name = n.trim().replace(/\s+/g, " ");
+  localStorage.setItem("name", name);
+  key = name.toLocaleLowerCase("tr").replace(/[.#$\[\]\/]/g, "_");
+  $("nameForm").hidden = true;
+  $("who").replaceChildren("Merhaba ", el("b", {textContent: name}),
+    el("a", {textContent: "ben değilim", href: "#", onclick: e => { e.preventDefault(); localStorage.removeItem("name"); location.reload(); }}));
+  if (location.hash === "#admin") showPin();
+  $("slots").replaceChildren(el("p", {className: "empty", textContent: "Yükleniyor…"}));
+  db.ref("slots").on("value", snap => { lastSlots = snap.val() || {}; render(); });
+}
+
+function showPin() {
+  const pin = el("input", {type: "password", inputMode: "numeric", placeholder: "Hoca PIN", autocomplete: "off"});
+  const err = el("p", {className: "err"});
+  const form = el("form", {onsubmit: e => {
+    e.preventDefault();
+    if (pin.value !== ADMIN_PIN) { err.textContent = "PIN yanlış."; return; }
+    isAdmin = true; showPanel(); render();
+  }}, el("h3", {textContent: "Hoca girişi"}), pin, el("button", {textContent: "Giriş"}), err);
+  $("admin").replaceChildren(form);
+  $("admin").hidden = false;
+}
+
+function showPanel() {
+  const label = el("input", {placeholder: "Örn: Salı 19:00"});
+  const cap = el("input", {type: "number", value: 16, min: 1, inputMode: "numeric", className: "cap", title: "Kontenjan"});
+  const err = el("p", {className: "err"});
+  const form = el("form", {onsubmit: e => {
+    e.preventDefault();
+    const c = parseInt(cap.value, 10);
+    if (!label.value.trim() || !(c > 0)) { err.textContent = "Saat ve kontenjan gerekli."; return; }
+    db.ref("slots").push({label: label.value.trim(), cap: c});
+    label.value = ""; err.textContent = "";
+    toast("Saat eklendi");
+  }}, el("h3", {textContent: "Hoca paneli · saat ekle"}), el("div", {className: "row"}, label, cap), el("button", {textContent: "Saat ekle"}), err);
+  $("admin").replaceChildren(form);
 }
 
 function toggle(id, cap) {
@@ -61,44 +157,56 @@ function toggle(id, cap) {
     else if (Object.keys(p).length >= cap) return;
     else p[key] = {n: name, t: firebase.database.ServerValue.TIMESTAMP};
     return p;
-  }, (err, committed) => { if (!err && !committed) alert("Bu saat dolu."); });
+  }, (err, committed) => {
+    if (err) toast("Bağlantı hatası, tekrar dene.");
+    else if (!committed) toast("Bu saat dolu.");
+  });
 }
 
-db.ref("slots").on("value", snap => {
-  const box = document.getElementById("slots");
+function render() {
+  const box = $("slots");
   box.replaceChildren();
-  const slots = snap.val() || {};
-  if (!Object.keys(slots).length) box.append(el("p", {textContent: "Henüz saat eklenmedi."}));
-  for (const [id, s] of Object.entries(slots)) {
+  const entries = Object.entries(lastSlots);
+  if (!entries.length) return box.append(el("p", {className: "empty", textContent: "Henüz saat eklenmedi."}));
+  for (const [id, s] of entries) {
     const people = s.people || {};
+    const count = Object.keys(people).length;
     const joined = !!people[key];
-    const full = Object.keys(people).length >= s.cap;
+    const full = count >= s.cap;
     // katılma sırası: eski kayıtlar düz metin (t yok), en başa gelir
     const ordered = Object.entries(people).sort(([, a], [, b]) => (a.t || 0) - (b.t || 0));
     const list = el("ol", {}, ...ordered.map(([k, v]) => el("li", {textContent: v.n || v, className: k === key ? "me" : ""})));
-    const btn = el("button", {
-      textContent: joined ? "Vazgeç" : full ? "Dolu" : "Katılıyorum",
-      className: joined ? "leave" : "",
-      disabled: full && !joined,
-      onclick: () => toggle(id, s.cap)
-    });
-    const card = el("div", {className: "slot"},
-      el("h2", {textContent: s.label}),
-      el("small", {textContent: `${Object.keys(people).length} / ${s.cap} kişi`}),
-      el("br"), btn);
-    if (isAdmin) card.append(" ", el("button", {textContent: "Saati sil", className: "ghost", onclick: () => confirm("Silinsin mi?") && db.ref("slots/" + id).remove()}));
-    card.append(list);
+    const left = s.cap - count;
+    const card = el("div", {className: "card" + (joined ? " joined" : "")},
+      el("div", {className: "head"},
+        el("h2", {textContent: s.label}),
+        joined ? el("span", {className: "badge", textContent: "✓ Katılıyorsun"})
+               : full ? el("span", {className: "badge full", textContent: "Dolu"}) : ""),
+      el("div", {className: "meta"},
+        el("span", {textContent: `${count} / ${s.cap} kişi`}),
+        el("span", {textContent: full ? "Kontenjan doldu" : `${left} yer kaldı`})),
+      el("div", {className: "bar" + (full ? " full" : "")}, el("i", {style: `width:${Math.min(100, count / s.cap * 100)}%`})),
+      el("button", {
+        textContent: joined ? "Vazgeç" : full ? "Dolu" : "Katılıyorum",
+        className: joined ? "leave" : "",
+        disabled: full && !joined,
+        onclick: () => toggle(id, s.cap)
+      }));
+    const open = openState.has(id) ? openState.get(id) : joined || count <= 6;
+    if (count) card.append(el("details", {open, ontoggle: e => openState.set(id, e.target.open)}, el("summary", {textContent: `Katılanlar (${count})`}), list));
+    if (isAdmin) card.append(el("button", {className: "link", textContent: "Saati sil",
+      onclick: () => confirm(`"${s.label}" silinsin mi?`) && db.ref("slots/" + id).remove()}));
     box.append(card);
   }
-});
+}
 
-document.getElementById("add").onclick = () => {
-  const label = document.getElementById("label").value.trim();
-  const cap = parseInt(document.getElementById("cap").value, 10);
-  if (!label || !(cap > 0)) return alert("Saat ve kontenjan gerekli.");
-  db.ref("slots").push({label, cap});
-  document.getElementById("label").value = "";
-};
+const saved = localStorage.getItem("name");
+if (saved && saved.trim()) start(saved);
+else {
+  $("nameForm").hidden = false;
+  $("nameInput").focus();
+  $("nameForm").onsubmit = e => { e.preventDefault(); const v = $("nameInput").value; if (v.trim()) start(v); };
+}
 </script>
 </body>
 </html>
