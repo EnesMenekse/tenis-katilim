@@ -118,9 +118,20 @@ function start(n) {
   $("nameForm").hidden = true;
   $("who").replaceChildren("Merhaba ", el("b", {textContent: name}),
     el("a", {textContent: "ben değilim", href: "#", onclick: e => { e.preventDefault(); localStorage.removeItem("name"); location.reload(); }}));
-  if (location.hash === "#admin") showPin();
+  syncAdmin();
+  addEventListener("hashchange", syncAdmin);
   $("slots").replaceChildren(el("p", {className: "empty", textContent: "Yükleniyor…"}));
   db.ref("slots").on("value", snap => { lastSlots = snap.val() || {}; render(); });
+}
+
+// hoca kısmı sadece #admin adresinde; adresten çıkınca panel kapanır, PIN tekrar sorulur
+function syncAdmin() {
+  if (location.hash === "#admin") { if (!isAdmin) showPin(); return; }
+  const was = isAdmin;
+  isAdmin = false;
+  $("admin").hidden = true;
+  $("admin").replaceChildren();
+  if (was && lastSlots) render();
 }
 
 function showPin() {
