@@ -25,7 +25,9 @@
          border:2px solid #ffffff22;box-shadow:0 0 0 18px #ffffff0d}
   header h1{margin:0;font-size:1.45rem;letter-spacing:-.01em}
   #who{margin:6px 0 0;font-size:.95rem;opacity:.92}
-  #who a{color:#fff;opacity:.75;margin-left:6px;font-size:.85rem}
+  #who{display:flex;align-items:center;flex-wrap:wrap;gap:8px 10px}
+  #who button{width:auto;min-height:34px;margin:0;padding:6px 12px;border-radius:99px;font-size:.85rem;
+              background:#ffffff26;color:#fff;border:1px solid #ffffff40}
   main{max-width:560px;margin:0 auto;padding:14px 14px 28px}
   .card{background:var(--card);border-radius:18px;padding:16px;margin:0 0 12px;box-shadow:var(--shadow);border:1px solid var(--line)}
   .card.joined{border-color:var(--green);box-shadow:0 0 0 1px var(--green) inset,var(--shadow)}
@@ -81,10 +83,13 @@
 </header>
 <main>
   <form id="nameForm" class="card" hidden>
-    <h2 style="margin:0 0 6px;font-size:1.15rem">Hoş geldin!</h2>
-    <p style="margin:0 0 12px;color:var(--muted)">Adını bir kez yaz, bu telefonda hatırlanır.</p>
+    <h2 id="nameTitle" style="margin:0 0 6px;font-size:1.15rem">Hoş geldin!</h2>
+    <p id="nameText" style="margin:0 0 12px;color:var(--muted)">Adını bir kez yaz, bu telefonda hatırlanır.</p>
     <input id="nameInput" placeholder="Ad Soyad" autocomplete="name" autocapitalize="words" enterkeyhint="done">
-    <button>Devam</button>
+    <div class="row">
+      <button type="button" id="nameCancel" class="ghost" hidden>İptal</button>
+      <button id="nameSubmit">Devam</button>
+    </div>
   </form>
   <div id="admin" class="card admin" hidden></div>
   <div id="slots"></div>
@@ -117,13 +122,50 @@ function toast(msg) {
   toast.h = setTimeout(() => t.classList.remove("show"), 2500);
 }
 
-function start(n) {
-  name = n.trim().replace(/\s+/g, " ");
+const clean = n => n.trim().replace(/\s+/g, " ");
+const toKey = n => n.toLocaleLowerCase("tr").replace(/[.#$\[\]\/]/g, "_");
+
+function setName(n) {
+  name = n;
+  key = toKey(n);
   localStorage.setItem("name", name);
-  key = name.toLocaleLowerCase("tr").replace(/[.#$\[\]\/]/g, "_");
+  $("who").replaceChildren(el("span", {}, "Merhaba ", el("b", {textContent: name})),
+    el("button", {type: "button", textContent: "✎ Değiştir", onclick: openRename}));
+}
+
+function openRename() {
+  $("nameTitle").textContent = "Adını değiştir";
+  $("nameText").textContent = "Katıldığın saatlerde adın da güncellenir.";
+  $("nameSubmit").textContent = "Kaydet";
+  $("nameCancel").hidden = false;
+  $("nameInput").value = name;
+  $("nameForm").hidden = false;
+  scrollTo({top: 0, behavior: "smooth"});
+  $("nameInput").focus();
+}
+
+// katıldığı saatlerdeki kaydı yeni ada taşır, katılma zamanı (sıra) korunur
+async function rename(n) {
+  const old = key, nk = toKey(n);
+  const ids = Object.keys(lastSlots || {}).filter(id => lastSlots[id].people?.[old]);
+  await Promise.all(ids.map(id => db.ref("slots/" + id).transaction(s => {
+    if (!s) return s;
+    const p = s.people || {}, v = p[old];
+    if (!v) return s;
+    delete p[old];
+    if (!p[nk]) p[nk] = {n, t: v.t || 0};
+    s.people = p;
+    return s;
+  })));
+  setName(n);
   $("nameForm").hidden = true;
-  $("who").replaceChildren("Merhaba ", el("b", {textContent: name}),
-    el("a", {textContent: "ben değilim", href: "#", onclick: e => { e.preventDefault(); localStorage.removeItem("name"); location.reload(); }}));
+  render();
+  toast("Adın güncellendi");
+}
+
+function start(n) {
+  setName(n);
+  $("nameForm").hidden = true;
   syncAdmin();
   addEventListener("hashchange", syncAdmin);
   $("slots").replaceChildren(el("p", {className: "empty", textContent: "Yükleniyor…"}));
@@ -254,12 +296,21 @@ function render() {
   }
 }
 
+$("nameForm").onsubmit = e => {
+  e.preventDefault();
+  const v = clean($("nameInput").value);
+  if (!v) return;
+  if (!name) start(v);
+  else if (v === name) $("nameForm").hidden = true;
+  else rename(v);
+};
+$("nameCancel").onclick = () => $("nameForm").hidden = true;
+
 const saved = localStorage.getItem("name");
-if (saved && saved.trim()) start(saved);
+if (saved && saved.trim()) start(clean(saved));
 else {
   $("nameForm").hidden = false;
   $("nameInput").focus();
-  $("nameForm").onsubmit = e => { e.preventDefault(); const v = $("nameInput").value; if (v.trim()) start(v); };
 }
 </script>
 </body>
