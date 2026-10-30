@@ -59,7 +59,7 @@ function toggle(id, cap) {
     p = p || {};
     if (p[key]) delete p[key];
     else if (Object.keys(p).length >= cap) return;
-    else p[key] = name;
+    else p[key] = {n: name, t: firebase.database.ServerValue.TIMESTAMP};
     return p;
   }, (err, committed) => { if (!err && !committed) alert("Bu saat dolu."); });
 }
@@ -73,7 +73,9 @@ db.ref("slots").on("value", snap => {
     const people = s.people || {};
     const joined = !!people[key];
     const full = Object.keys(people).length >= s.cap;
-    const list = el("ol", {}, ...Object.entries(people).map(([k, n]) => el("li", {textContent: n, className: k === key ? "me" : ""})));
+    // katılma sırası: eski kayıtlar düz metin (t yok), en başa gelir
+    const ordered = Object.entries(people).sort(([, a], [, b]) => (a.t || 0) - (b.t || 0));
+    const list = el("ol", {}, ...ordered.map(([k, v]) => el("li", {textContent: v.n || v, className: k === key ? "me" : ""})));
     const btn = el("button", {
       textContent: joined ? "Vazgeç" : full ? "Dolu" : "Katılıyorum",
       className: joined ? "leave" : "",
